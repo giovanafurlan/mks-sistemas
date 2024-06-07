@@ -6,7 +6,7 @@ const CartContainer = styled(motion.div)`
   position: fixed;
   top: 0;
   right: 0;
-  width: 400px;
+  width: 300px;
   height: 100%;
   background: #0f52ba;
   z-index: 1000;
@@ -32,7 +32,7 @@ const CartItem = styled.div`
   border-radius: 5px;
   color: black;
   margin: 15px;
-  padding: 20px;
+  padding: 20px 10px;
   position: relative;
   align-items: center;
 `;
@@ -41,12 +41,14 @@ const CartItemTitle = styled.h3`
   margin: 0;
   font-size: 15px;
   font-weight: lighter;
+  max-width: fit-content;
+  flex-wrap: wrap;
 `;
 
-const CartItemImage = styled.img``
+const CartItemImage = styled.img``;
 
 const CartItemPrice = styled.span`
-  font-size: 18px;
+  font-size: 15px;
   font-weight: bold;
 `;
 
@@ -71,6 +73,31 @@ const CartCloseButton2 = styled.button`
   position: absolute;
   top: -10px;
   right: -10px;
+`;
+
+const IncremetDiv = styled.div`
+  display: flex;
+  border: 1px solid gray;
+  border-radius: 5px;
+  width: min-content;
+  height: min-content;
+  align-items: center;
+  margin: 0 auto;
+`;
+
+const Amount = styled.p`
+  margin: 0;
+  font-size: 12px;
+`;
+
+const IncrementButton = styled.button`
+  border: none;
+  background: none;
+`;
+
+const DecrementButton = styled.button`
+  border: none;
+  background: none;
 `;
 
 const TotalContainer = styled.div`
@@ -102,14 +129,32 @@ interface CartProps {
   isOpen: boolean;
   onClose: () => void;
   cartItems: {
-    photo: any; id: number; name: string; price: number; quantity: number 
-}[];
+    photo: any;
+    id: number;
+    name: string;
+    price: number;
+    quantity: number;
+  }[];
+  productQuantities: any;
+  incrementItem: (product: number) => void;
+  decrementItem: (product: number) => void;
+  removeItem: (id: number) => void;
 }
 
-const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems }) => {
+const Cart: React.FC<CartProps> = ({
+  isOpen,
+  onClose,
+  cartItems,
+  productQuantities,
+  incrementItem,
+  decrementItem,
+  removeItem,
+}) => {
   const total =
     cartItems?.reduce((sum, item) => sum + item.price * cartItems.length, 0) ||
     0;
+
+  console.log("cartItems", cartItems);
 
   return (
     <CartContainer
@@ -123,10 +168,21 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems }) => {
       </CartHeader>
       {cartItems?.map((item) => (
         <CartItem key={item.id}>
-          <CartCloseButton2>×</CartCloseButton2>
+          <CartCloseButton2 onClick={() => removeItem(item.id)}>
+            ×
+          </CartCloseButton2>
           <CartItemImage src={item.photo} alt={item.name} width={50} />
           <CartItemTitle>{item.name}</CartItemTitle>
-          <CartItemPrice>R$ {item.price}</CartItemPrice>
+          <IncremetDiv>
+            <IncrementButton onClick={() => incrementItem(item.id)}>
+              +
+            </IncrementButton>
+            <Amount>{productQuantities[item.id] || 0}</Amount>
+            <DecrementButton onClick={() => decrementItem(item.id)}>
+              -
+            </DecrementButton>
+          </IncremetDiv>
+          <CartItemPrice>R$ {item.price.toString().split('.')[0]}</CartItemPrice>
         </CartItem>
       ))}
       <TotalContainer>

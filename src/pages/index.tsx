@@ -54,6 +54,14 @@ const ProductGrid = styled.div`
   gap: 20px;
   max-width: 1200px;
   margin: 20px;
+
+  @media only screen and (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media only screen and (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const ProductCard = styled(motion.div)`
@@ -118,6 +126,11 @@ const Footer = styled.div`
   background-color: #eeeeee;
   font-weight: lighter;
   text-align: center;
+  padding: 10px;
+
+  @media only screen and (min-width: 768px) {
+    padding: 20px;
+  }
 `;
 
 interface Product {
@@ -136,6 +149,10 @@ const Home: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [shopCart, setShopCart] = useState<Product[]>([]);
 
+  const [productQuantities, setProductQuantities] = useState<{
+    [key: number]: number;
+  }>({});
+
   useEffect(() => {
     setIsLoading(true);
     const fetchProducts = async () => {
@@ -153,7 +170,71 @@ const Home: React.FC = () => {
   }, []);
 
   const addToCart = (product: Product) => {
-    setShopCart((prevCart) => [...prevCart, product]);
+    // Verifica se o produto já está no carrinho
+    const existingProductIndex = shopCart.findIndex(
+      (item) => item.id === product.id
+    );
+
+    if (existingProductIndex !== -1) {
+      // Se o produto já está no carrinho, apenas atualize a quantidade
+      setShopCart((prevCart) => {
+        const updatedCart = [...prevCart];
+        updatedCart[existingProductIndex].quantity += 1;
+        return updatedCart;
+      });
+    } else {
+      // Se o produto não está no carrinho, adicione-o
+      setShopCart((prevCart) => [...prevCart, { ...product, quantity: 1 }]);
+    }
+
+    setIsCartOpen(true);
+  };
+
+  const incrementItem = (productId: number) => {
+    setProductQuantities((prevQuantities) => ({
+      ...prevQuantities,
+      [productId]: (prevQuantities[productId] || 0) + 1,
+    }));
+
+    setShopCart((prevCart) => {
+      const updatedCart = [...prevCart];
+      const existingProductIndex = updatedCart.findIndex(
+        (item) => item.id === productId
+      );
+      const updatedProduct = { ...updatedCart[existingProductIndex] };
+      updatedProduct.quantity += 1;
+      updatedProduct.price *= updatedProduct.quantity; // Atualiza o preço multiplicando pela nova quantidade
+      updatedCart[existingProductIndex] = updatedProduct;
+      return updatedCart;
+    });
+  };
+
+  const decrementItem = (productId: number) => {
+    setProductQuantities((prevQuantities) => ({
+      ...prevQuantities,
+      [productId]: Math.max((prevQuantities[productId] || 0) - 1, 0),
+    }));
+
+    setShopCart((prevCart) => {
+      const updatedCart = [...prevCart];
+      const existingProductIndex = updatedCart.findIndex(
+        (item) => item.id === productId
+      );
+      const updatedProduct = { ...updatedCart[existingProductIndex] };
+      updatedProduct.quantity -= 1;
+      updatedProduct.price *= updatedProduct.quantity; // Atualiza o preço multiplicando pela nova quantidade
+      if (updatedProduct.quantity === 0) {
+        // Remove o produto do carrinho se a quantidade for zero
+        updatedCart.splice(existingProductIndex, 1);
+      } else {
+        updatedCart[existingProductIndex] = updatedProduct;
+      }
+      return updatedCart;
+    });
+  };
+
+  const removeFromCart = (productId: number) => {
+    setShopCart((prevCart) => prevCart.filter((item) => item.id !== productId));
   };
 
   return (
@@ -188,7 +269,10 @@ const Home: React.FC = () => {
                 <ProductTitle>{product.name}</ProductTitle>
                 <ProductPrice>R$ {product.price}</ProductPrice>
                 <ProductDescription>{product.description}</ProductDescription>
-                <ProductButton style={{cursor: "pointer"}} onClick={() => addToCart(product)}>
+                <ProductButton
+                  style={{ cursor: "pointer" }}
+                  onClick={() => addToCart(product)}
+                >
                   Comprar
                 </ProductButton>
               </ProductCard>
@@ -199,6 +283,10 @@ const Home: React.FC = () => {
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}
           cartItems={shopCart}
+          productQuantities={productQuantities}
+          removeItem={removeFromCart}
+          incrementItem={incrementItem}
+          decrementItem={decrementItem}
         />
       </MainSection>
       <Footer>
